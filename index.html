@@ -907,27 +907,6 @@ flowchart TD
         <p>Chainlink Automation uses a round-based system with per-token tracking. Each upkeep encodes <code class="mono">(tokenId, round)</code> for guaranteed idempotency, preventing duplicate or stale executions.</p>
       </div>
     </div>
-
-    <div class="diagram-box reveal">
-      <div class="diagram-title">PostParam Data Flow</div>
-      <pre class="mermaid">
-flowchart TD
-    CFG["Configure<br/>(Write Path)"]:::cyan --> OTC["onTokenPMPConfigure"]:::cyan
-    RD["Read<br/>(Display Path)"]:::pink --> OTPR["onTokenPMPRead<br/>Augmentation"]:::pink
-
-    OTC -->|"writes"| STATE["On-Chain State<br/>─────────────<br/>• tokenMetadata<br/>• priceHistory — 12 entries<br/>• isWithdrawn<br/>• assignedToken"]:::yellow
-    STATE -->|"reads"| OTPR
-
-    OTC --> V["Validates &amp; stores<br/>user actions<br/>(mint, withdraw)"]:::muted
-    OTPR --> I["Injects prices as<br/>PostParam array<br/>for the artwork"]:::purple
-
-    classDef cyan fill:#0d2d2b,stroke:#5ce0d8,color:#5ce0d8
-    classDef pink fill:#2d0d1e,stroke:#f06292,color:#f06292
-    classDef yellow fill:#2d2a0d,stroke:#ffd54f,color:#ffd54f
-    classDef purple fill:#1a0d2d,stroke:#7c4dff,color:#7c4dff
-    classDef muted fill:#1a1a1f,stroke:#6b6b7b,color:#6b6b7b
-      </pre>
-    </div>
   </div>
 </section>
 
