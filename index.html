@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pool Party — by Basement x ryley-o.eth</title>
+  <title>Pool Party — by BASEMENT x ryley-o.eth</title>
   <meta name="description" content="Pool Party is a networked, generative art experience on Art Blocks. ERC-20 prices shape each artwork over time." />
   <meta property="og:title" content="Pool Party — Generative Art on Art Blocks" />
   <meta property="og:description" content="A networked generative art experience influenced by real-world ERC-20 token prices over time." />
@@ -144,6 +144,18 @@
       display: flex;
       justify-content: space-between;
     }
+    .hero-cta {
+      display: inline-block;
+      margin-top: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--accent-1);
+      border: 1px solid var(--accent-1);
+      padding: 0.6rem 1.6rem;
+      border-radius: 100px;
+      transition: background 0.3s, color 0.3s;
+    }
+    .hero-cta:hover { background: var(--accent-1); color: var(--bg); }
     .scroll-indicator {
       position: absolute;
       bottom: 2rem;
@@ -202,6 +214,14 @@
       color: var(--fg);
       white-space: pre;
       overflow-x: auto;
+    }
+    .diagram-box .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+    .diagram-box .mermaid svg {
+      max-width: 100%;
+      height: auto;
     }
     .diagram-title {
       font-family: var(--font-mono);
@@ -549,7 +569,8 @@
   <div class="hero-badge">Art Blocks &middot; Generative Art &middot; On-Chain</div>
   <h1>Pool Party</h1>
   <p>A networked, generative art experience where real-world ERC-20 token prices shape each artwork over time.</p>
-  <p class="muted mono small" style="margin-top:-0.5rem;">by <strong>Basement</strong> x <strong>ryley-o.eth</strong></p>
+  <p class="muted mono small" style="margin-top:-0.5rem;">by <strong>BASEMENT</strong> x <strong>ryley-o.eth</strong></p>
+  <a href="https://www.artblocks.io/collection/pool-party-by-basement-x-ryley-o" target="_blank" rel="noopener" class="hero-cta">View on Art Blocks &rarr;</a>
 
   <div class="hero-artwork gradient-border">
     <img src="https://abstudio-76-mainnet.s3.amazonaws.com/0.png" alt="Pool Party #0" loading="eager" />
@@ -672,40 +693,21 @@
 
     <div class="diagram-box reveal">
       <div class="diagram-title">Mint Transaction Flow</div>
-      <pre>
-  ┌─────────────────────┐
-  │   <span class="accent-1">Collector</span>          │     Chooses price &amp; mints
-  │   sends ETH         │     via Art Blocks
-  └─────────┬───────────┘
-            │
-            ▼
-  ┌─────────────────────┐
-  │  <span class="accent-2">Art Blocks</span>          │     Sliding Scale Minter
-  │  Minting Contract   │     accepts variable pricing
-  └─────────┬───────────┘
-            │
-            ├──────────────────────────────────── 10% ──→  Art Blocks Revenue
-            │
-            ▼
-  ┌─────────────────────┐
-  │  <span class="accent-3">StratHooks.sol</span>      │     PostParam Hook triggered
-  │  (onTokenPMPConfigure)│     on mint
-  └─────────┬───────────┘
-            │
-            ├──────────────────────────────────── 10% ──→  Artist Revenue
-            │
-            ▼
-  ┌─────────────────────┐
-  │  <span class="accent-4">GuardedEthToken</span>    │     80% of ETH used to
-  │  <span class="accent-4">Swapper.sol</span>         │     buy random ERC-20
-  └─────────┬───────────┘
-            │  Chainlink oracle validates fair price
-            │  Uniswap V3 executes atomic swap
-            ▼
-  ┌─────────────────────┐
-  │  <span class="accent-5">ERC-20 Tokens</span>      │     Held by StratHooks
-  │  held in contract   │     until withdrawal
-  └─────────────────────┘
+      <pre class="mermaid">
+flowchart TD
+    A["🧑 Collector<br/>sends ETH"]:::cyan -->|"mints via Art Blocks"| B["Art Blocks<br/>Sliding Scale Minter"]:::pink
+    B -->|"10%"| R1["Art Blocks<br/>Revenue"]:::muted
+    B -->|"10%"| R2["Artist<br/>Revenue"]:::muted
+    B -->|"80%"| C["StratHooks.sol<br/>onTokenPMPConfigure<br/>(PostParam Hook)"]:::yellow
+    C --> D["GuardedEthTokenSwapper<br/>Chainlink oracle validates fair price"]:::purple
+    D -->|"Uniswap V3<br/>atomic swap"| E["ERC-20 Tokens<br/>held by StratHooks<br/>until withdrawal"]:::orange
+
+    classDef cyan fill:#0d2d2b,stroke:#5ce0d8,color:#5ce0d8
+    classDef pink fill:#2d0d1e,stroke:#f06292,color:#f06292
+    classDef yellow fill:#2d2a0d,stroke:#ffd54f,color:#ffd54f
+    classDef purple fill:#1a0d2d,stroke:#7c4dff,color:#7c4dff
+    classDef orange fill:#2d1a0d,stroke:#ff7043,color:#ff7043
+    classDef muted fill:#1a1a1f,stroke:#6b6b7b,color:#6b6b7b
       </pre>
     </div>
 
@@ -773,36 +775,17 @@
 
     <div class="diagram-box reveal">
       <div class="diagram-title">Chainlink Automation &amp; PostParam Injection</div>
-      <pre>
-  Time ─────────────────────────────────────────────────────────▶
+      <pre class="mermaid">
+flowchart LR
+    M(("Mint")):::cyan -.->|"random<br/>intervals"| C["C1 → C2 → ... → C12<br/>12 Automated Check-ins"]:::yellow
+    C -->|"each price<br/>recorded on-chain"| PS["On-Chain State<br/>priceHistory array"]:::cyan
+    PS -->|"onTokenPMPRead<br/>Augmentation"| PP["PostParam Values<br/>injected on display"]:::purple
+    PP --> ART["🎨 Artwork<br/>Responds &amp; Evolves"]:::pink
 
-  Mint                                                    12th Check-in
-   │                                                           │
-   ▼     ┌──┐  ┌──┐     ┌──┐  ┌──┐  ┌──┐  ┌──┐     ┌──┐     ▼
-   ●─────│C1│──│C2│─────│C3│──│C4│──│C5│──│C6│─────│..│─────●
-         └──┘  └──┘     └──┘  └──┘  └──┘  └──┘     └──┘
-          │     │         │     │     │     │         │
-          ▼     ▼         ▼     ▼     ▼     ▼         ▼
-        price  price    price price price price     price
-        saved  saved    saved saved saved saved     saved
-          │     │         │     │     │     │         │
-          └─────┴─────────┴─────┴─────┴─────┴─────────┘
-                              │
-                              ▼
-                  ┌───────────────────────┐
-                  │  <span class="accent-1">PostParam Values</span>     │
-                  │  injected on read     │
-                  │  via onTokenPMPRead   │
-                  │  Augmentation         │
-                  └───────────┬───────────┘
-                              │
-                              ▼
-                  ┌───────────────────────┐
-                  │  <span class="accent-2">Artwork Responds</span>     │
-                  │  Visual output        │
-                  │  evolves with each    │
-                  │  price check-in       │
-                  └───────────────────────┘
+    classDef cyan fill:#0d2d2b,stroke:#5ce0d8,color:#5ce0d8
+    classDef pink fill:#2d0d1e,stroke:#f06292,color:#f06292
+    classDef yellow fill:#2d2a0d,stroke:#ffd54f,color:#ffd54f
+    classDef purple fill:#1a0d2d,stroke:#7c4dff,color:#7c4dff
       </pre>
     </div>
 
@@ -852,23 +835,16 @@
 
     <div class="diagram-box reveal">
       <div class="diagram-title">Withdrawal Flow</div>
-      <pre>
-  ┌─────────────────────┐    All 12 check-ins    ┌─────────────────────┐
-  │  <span class="accent-1">StratHooks</span>         │      complete         │  <span class="accent-3">Token Owner</span>        │
-  │  Contract           │ ◀────────────────────── │  (Collector)        │
-  │  holds ERC-20s      │                         │                     │
-  └─────────┬───────────┘                         └──────────┬──────────┘
-            │                                                │
-            │   Owner sets isWithdrawn = true                 │
-            │   via PostParam configure                       │
-            │◀───────────────────────────────────────────────┘
-            │
-            ▼
-  ┌─────────────────────┐
-  │  ERC-20 tokens      │
-  │  transferred to     │──────────▶  Collector's Wallet 🎉
-  │  token owner        │
-  └─────────────────────┘
+      <pre class="mermaid">
+flowchart TD
+    A["✅ All 12 check-ins<br/>complete"]:::yellow --> B["Token Owner<br/>sets isWithdrawn = true<br/>via PostParam configure"]:::cyan
+    B --> C["StratHooks Contract<br/>transfers ERC-20 tokens"]:::purple
+    C --> D["🎉 Collector's Wallet<br/>tokens received"]:::pink
+
+    classDef cyan fill:#0d2d2b,stroke:#5ce0d8,color:#5ce0d8
+    classDef pink fill:#2d0d1e,stroke:#f06292,color:#f06292
+    classDef yellow fill:#2d2a0d,stroke:#ffd54f,color:#ffd54f
+    classDef purple fill:#1a0d2d,stroke:#7c4dff,color:#7c4dff
       </pre>
     </div>
   </div>
@@ -888,43 +864,29 @@
 
     <div class="diagram-box reveal">
       <div class="diagram-title">System Architecture</div>
-      <pre>
-  ┌────────────────────────────────────────────────────────────────────┐
-  │                     <span class="accent-1">ART BLOCKS ECOSYSTEM</span>                         │
-  │                                                                    │
-  │  ┌──────────────┐     ┌──────────────────┐     ┌──────────────┐   │
-  │  │ Art Blocks    │     │ Sliding Scale    │     │ Studio       │   │
-  │  │ Core Contract │────▶│ Minter           │────▶│ Contract     │   │
-  │  │              │     │ (variable price) │     │ (on-chain    │   │
-  │  │              │     │                  │     │  scripts)    │   │
-  │  └──────────────┘     └──────────────────┘     └──────┬───────┘   │
-  │                                                       │           │
-  │                                          PostParam Hook│           │
-  └───────────────────────────────────────────────────────┼───────────┘
-                                                          │
-                          ┌───────────────────────────────▼───────────┐
-                          │          <span class="accent-2">StratHooks.sol</span>                   │
-                          │  ┌─────────────────────────────────────┐  │
-                          │  │ • onTokenPMPConfigure (mint logic)  │  │
-                          │  │ • onTokenPMPReadAugmentation        │  │
-                          │  │ • checkUpkeep / performUpkeep       │  │
-                          │  │ • Token metadata &amp; price history    │  │
-                          │  │ • Withdrawal logic                  │  │
-                          │  └─────────────────────────────────────┘  │
-                          │                     │                     │
-                          └─────────────────────┼─────────────────────┘
-                                                │
-                    ┌───────────────────────┬────┴─────────────────────┐
-                    │                       │                          │
-                    ▼                       ▼                          ▼
-  ┌─────────────────────┐   ┌────────────────────┐   ┌────────────────────┐
-  │ <span class="accent-3">GuardedEthToken</span>    │   │ <span class="accent-4">Chainlink</span>           │   │ <span class="accent-5">Chainlink</span>           │
-  │ <span class="accent-3">Swapper.sol</span>         │   │ <span class="accent-4">Oracles</span>             │   │ <span class="accent-5">Automation</span>          │
-  │                     │   │                    │   │                    │
-  │ • ETH → ERC20 swap │   │ • TOKEN/ETH feeds  │   │ • checkUpkeep      │
-  │ • MEV protection   │   │ • Price validation │   │ • performUpkeep    │
-  │ • Uniswap V3       │   │ • 24hr staleness   │   │ • Round tracking   │
-  └─────────────────────┘   └────────────────────┘   └────────────────────┘
+      <pre class="mermaid">
+flowchart TD
+    subgraph AB ["ART BLOCKS ECOSYSTEM"]
+        direction LR
+        ABC["Art Blocks<br/>Core Contract"]:::cyan --> SSM["Sliding Scale<br/>Minter<br/>(variable price)"]:::cyan
+        SSM --> SC["Studio Contract<br/>(on-chain scripts)"]:::cyan
+    end
+
+    SC -->|"PostParam Hook"| SH
+
+    subgraph SH_BOX ["StratHooks.sol (UUPS Proxy)"]
+        SH["• onTokenPMPConfigure — mint logic<br/>• onTokenPMPReadAugmentation<br/>• checkUpkeep / performUpkeep<br/>• Token metadata &amp; price history<br/>• Withdrawal logic"]:::pink
+    end
+
+    SH --> GETS["GuardedEthToken<br/>Swapper.sol<br/>─────────────<br/>• ETH → ERC20 swap<br/>• MEV protection<br/>• Uniswap V3"]:::yellow
+    SH --> CLO["Chainlink<br/>Oracles<br/>─────────────<br/>• TOKEN/ETH feeds<br/>• Price validation<br/>• 24hr staleness"]:::purple
+    SH --> CLA["Chainlink<br/>Automation<br/>─────────────<br/>• checkUpkeep<br/>• performUpkeep<br/>• Round tracking"]:::orange
+
+    classDef cyan fill:#0d2d2b,stroke:#5ce0d8,color:#5ce0d8
+    classDef pink fill:#2d0d1e,stroke:#f06292,color:#f06292
+    classDef yellow fill:#2d2a0d,stroke:#ffd54f,color:#ffd54f
+    classDef purple fill:#1a0d2d,stroke:#7c4dff,color:#7c4dff
+    classDef orange fill:#2d1a0d,stroke:#ff7043,color:#ff7043
       </pre>
     </div>
 
@@ -932,7 +894,7 @@
       <div class="info-card">
         <div class="info-card-icon" style="background:rgba(92,224,216,0.1);">⛓️</div>
         <h3>Fully On-Chain</h3>
-        <p>Pool Party is configured on the Basement Art Blocks Studio contract. All script information &mdash; the generative code that produces each artwork &mdash; is stored fully on-chain, ensuring permanence and decentralization.</p>
+        <p>Pool Party is configured on the BASEMENT Art Blocks Studio contract. All script information &mdash; the generative code that produces each artwork &mdash; is stored fully on-chain, ensuring permanence and decentralization.</p>
       </div>
       <div class="info-card">
         <div class="info-card-icon" style="background:rgba(124,77,255,0.1);">🛡️</div>
@@ -948,27 +910,22 @@
 
     <div class="diagram-box reveal">
       <div class="diagram-title">PostParam Data Flow</div>
-      <pre>
-  ┌──────────────────┐                        ┌──────────────────┐
-  │  <span class="accent-1">Configure</span>       │                        │  <span class="accent-2">Read</span>             │
-  │  (Write Path)    │                        │  (Display Path)  │
-  └────────┬─────────┘                        └────────┬─────────┘
-           │                                           │
-           ▼                                           ▼
-  onTokenPMPConfigure                     onTokenPMPReadAugmentation
-           │                                           │
-           │  ┌────────────────────────┐               │
-           │  │  On-Chain State        │               │
-           ├─▶│  • tokenMetadata       │──────────────▶│
-           │  │  • priceHistory[12]    │               │
-           │  │  • isWithdrawn         │               │
-           │  │  • assignedToken       │               │
-           │  └────────────────────────┘               │
-           │                                           │
-           ▼                                           ▼
-  Validates &amp; stores                       Injects prices as
-  user actions                             PostParam array
-  (mint, withdraw)                         for the artwork
+      <pre class="mermaid">
+flowchart TD
+    CFG["Configure<br/>(Write Path)"]:::cyan --> OTC["onTokenPMPConfigure"]:::cyan
+    RD["Read<br/>(Display Path)"]:::pink --> OTPR["onTokenPMPRead<br/>Augmentation"]:::pink
+
+    OTC -->|"writes"| STATE["On-Chain State<br/>─────────────<br/>• tokenMetadata<br/>• priceHistory — 12 entries<br/>• isWithdrawn<br/>• assignedToken"]:::yellow
+    STATE -->|"reads"| OTPR
+
+    OTC --> V["Validates &amp; stores<br/>user actions<br/>(mint, withdraw)"]:::muted
+    OTPR --> I["Injects prices as<br/>PostParam array<br/>for the artwork"]:::purple
+
+    classDef cyan fill:#0d2d2b,stroke:#5ce0d8,color:#5ce0d8
+    classDef pink fill:#2d0d1e,stroke:#f06292,color:#f06292
+    classDef yellow fill:#2d2a0d,stroke:#ffd54f,color:#ffd54f
+    classDef purple fill:#1a0d2d,stroke:#7c4dff,color:#7c4dff
+    classDef muted fill:#1a1a1f,stroke:#6b6b7b,color:#6b6b7b
       </pre>
     </div>
   </div>
@@ -1026,14 +983,14 @@
         <div class="ref-icon">🔍</div>
         <div class="ref-info">
           <h4>Pool Party Studio Contract</h4>
-          <p>0xaa00b2b2db36b8f8004a9aa96f0012005d92b300 — Basement Art Blocks Studio contract.</p>
+          <p>0xaa00b2b2db36b8f8004a9aa96f0012005d92b300 — BASEMENT Art Blocks Studio contract.</p>
         </div>
       </a>
-      <a class="ref-card" href="https://www.artblocks.io/" target="_blank" rel="noopener">
+      <a class="ref-card" href="https://www.artblocks.io/collection/pool-party-by-basement-x-ryley-o" target="_blank" rel="noopener">
         <div class="ref-icon">🏛️</div>
         <div class="ref-info">
-          <h4>Art Blocks</h4>
-          <p>The premier platform for generative art on Ethereum. Purchase Pool Party tokens here.</p>
+          <h4>Pool Party on Art Blocks</h4>
+          <p>View the collection, mint, and explore all Pool Party tokens on Art Blocks.</p>
         </div>
       </a>
       <a class="ref-card" href="https://generator.artblocks.io/1/0xaa00b2b2db36b8f8004a9aa96f0012005d92b300/0" target="_blank" rel="noopener">
@@ -1053,7 +1010,7 @@
 <div class="divider"></div>
 <footer>
   <div class="container">
-    <p class="mono" style="margin-bottom: 0.5rem;">Pool Party &mdash; <span class="accent-1">Basement</span> x <span class="accent-2">ryley-o.eth</span></p>
+    <p class="mono" style="margin-bottom: 0.5rem;">Pool Party &mdash; <span class="accent-1">BASEMENT</span> x <span class="accent-2">ryley-o.eth</span></p>
     <p style="margin-bottom: 0;">A networked generative art experience on Art Blocks.</p>
   </div>
 </footer>
@@ -1061,6 +1018,33 @@
 <!-- ════════════════════════════════════════════════════ -->
 <!--  SCRIPTS                                            -->
 <!-- ════════════════════════════════════════════════════ -->
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    darkMode: true,
+    background: 'transparent',
+    mainBkg: '#12121a',
+    nodeBorder: '#5ce0d8',
+    clusterBkg: 'rgba(255,255,255,0.03)',
+    clusterBorder: 'rgba(255,255,255,0.1)',
+    lineColor: '#4a4a5a',
+    textColor: '#e8e4df',
+    primaryTextColor: '#e8e4df',
+    secondaryTextColor: '#e8e4df',
+    tertiaryTextColor: '#e8e4df',
+    fontSize: '13px',
+    fontFamily: "'Courier New', monospace"
+  },
+  flowchart: {
+    curve: 'basis',
+    padding: 16,
+    htmlLabels: true
+  }
+});
+</script>
 <script>
 // ── Scroll reveal ─────────────────────────────────────────
 const reveals = document.querySelectorAll('.reveal');
