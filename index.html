@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pool Party — by Basement x ryley-o.eth</title>
+  <meta name="description" content="Pool Party is a networked, generative art experience on Art Blocks. ERC-20 prices shape each artwork over time." />
+  <meta property="og:title" content="Pool Party — Generative Art on Art Blocks" />
+  <meta property="og:description" content="A networked generative art experience influenced by real-world ERC-20 token prices over time." />
+  <meta property="og:image" content="https://abstudio-76-mainnet.s3.amazonaws.com/0.png" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏊</text></svg>" />
+  <style>
+    /* ── Reset & Base ───────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a0f;
+      --fg: #e8e4df;
+      --accent-1: #5ce0d8;
+      --accent-2: #f06292;
+      --accent-3: #ffd54f;
+      --accent-4: #7c4dff;
+      --accent-5: #ff7043;
+      --muted: #6b6b7b;
+      --card-bg: rgba(255,255,255,0.04);
+      --card-border: rgba(255,255,255,0.08);
+      --font-mono: 'Courier New', 'Courier', monospace;
+      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-sans);
+      line-height: 1.7;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: var(--accent-1); color: var(--bg); }
+
+    /* ── Pixel Canvas Background ────────────────────────── */
+    #pixel-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: -1;
+      opacity: 0.3;
+      image-rendering: pixelated;
+    }
+
+    /* ── Layout ──────────────────────────────────────────── */
+    .container { max-width: 900px; margin: 0 auto; padding: 0 2rem; }
+    .wide-container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+    section { padding: 6rem 0; }
+
+    /* ── Typography ──────────────────────────────────────── */
+    h1, h2, h3, h4 { font-family: var(--font-mono); font-weight: 400; letter-spacing: -0.02em; }
+    h1 { font-size: clamp(2.4rem, 6vw, 4.5rem); line-height: 1.1; }
+    h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); line-height: 1.2; margin-bottom: 1.5rem; }
+    h3 { font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--accent-1); }
+    p { margin-bottom: 1.25rem; color: rgba(232,228,223,0.82); }
+    a { color: var(--accent-1); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-3); }
+    .mono { font-family: var(--font-mono); }
+    .muted { color: var(--muted); }
+    .accent-1 { color: var(--accent-1); }
+    .accent-2 { color: var(--accent-2); }
+    .accent-3 { color: var(--accent-3); }
+    .accent-4 { color: var(--accent-4); }
+    .accent-5 { color: var(--accent-5); }
+    .small { font-size: 0.85rem; }
+    strong { font-weight: 600; }
+
+    /* ── Reveal on scroll ─────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Hero ──────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      padding: 2rem;
+    }
+    .hero-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      border: 1px solid var(--card-border);
+      padding: 0.4rem 1.2rem;
+      border-radius: 100px;
+      margin-bottom: 2rem;
+    }
+    .hero h1 {
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2), var(--accent-3), var(--accent-4));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.5rem;
+    }
+    .hero p {
+      max-width: 600px;
+      font-size: 1.15rem;
+      color: rgba(232,228,223,0.7);
+    }
+    .hero-artwork {
+      margin-top: 3rem;
+      width: min(500px, 80vw);
+      height: min(500px, 80vw);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 0 80px rgba(92, 224, 216, 0.08), 0 0 160px rgba(240, 98, 146, 0.05);
+      position: relative;
+    }
+    .hero-artwork img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      image-rendering: pixelated;
+    }
+    .hero-artwork-label {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 0.8rem 1rem;
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(8px);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    .scroll-indicator {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      animation: float 2s ease-in-out infinite;
+    }
+    .scroll-indicator span { font-size: 0.7rem; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em; }
+    .scroll-indicator svg { width: 20px; height: 20px; stroke: var(--muted); }
+    @keyframes float { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(8px); } }
+
+    /* ── Section Divider ──────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--card-border), transparent);
+      margin: 0 auto;
+      max-width: 600px;
+    }
+
+    /* ── Overview Section ──────────────────────────────────── */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.15); }
+    .stat-card .label { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin-bottom: 0.5rem; }
+    .stat-card .value { font-family: var(--font-mono); font-size: 1.8rem; font-weight: 600; }
+    .stat-card .desc { font-size: 0.85rem; color: rgba(232,228,223,0.6); margin-top: 0.4rem; margin-bottom: 0; }
+
+    /* ── Diagram Sections ──────────────────────────────────── */
+    .diagram-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      margin: 2rem 0;
+      overflow-x: auto;
+    }
+    .diagram-box pre {
+      font-family: var(--font-mono);
+      font-size: clamp(0.6rem, 1.3vw, 0.82rem);
+      line-height: 1.5;
+      color: var(--fg);
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .diagram-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Timeline ──────────────────────────────────────────── */
+    .timeline {
+      position: relative;
+      padding-left: 3rem;
+      margin: 2.5rem 0;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0.75rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, var(--accent-1), var(--accent-2), var(--accent-3), var(--accent-4), var(--accent-5));
+      border-radius: 2px;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2.5rem;
+    }
+    .timeline-item:last-child { margin-bottom: 0; }
+    .timeline-dot {
+      position: absolute;
+      left: -2.42rem;
+      top: 0.3rem;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-1);
+      background: var(--bg);
+    }
+    .timeline-item:nth-child(2) .timeline-dot { border-color: var(--accent-2); }
+    .timeline-item:nth-child(3) .timeline-dot { border-color: var(--accent-3); }
+    .timeline-item:nth-child(4) .timeline-dot { border-color: var(--accent-4); }
+    .timeline-item:nth-child(5) .timeline-dot { border-color: var(--accent-5); }
+    .timeline-item:nth-child(6) .timeline-dot { border-color: var(--accent-1); }
+    .timeline-step {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+    .timeline-item h3 { margin-bottom: 0.3rem; }
+    .timeline-item p { margin-bottom: 0; font-size: 0.95rem; }
+
+    /* ── Token Cards ──────────────────────────────────────── */
+    .token-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 0.8rem;
+      margin: 1.5rem 0;
+    }
+    .token-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0.65rem 0.8rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      text-align: center;
+      transition: transform 0.2s, border-color 0.3s, box-shadow 0.3s;
+      cursor: default;
+    }
+    .token-pill:hover {
+      transform: scale(1.05);
+      border-color: var(--accent-1);
+      box-shadow: 0 0 20px rgba(92, 224, 216, 0.1);
+    }
+
+    /* ── Info Cards ─────────────────────────────────────── */
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    .info-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 2rem;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .info-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+    .info-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+    }
+    .info-card h3 { color: var(--fg); font-size: 1.1rem; }
+    .info-card p { font-size: 0.9rem; margin-bottom: 0; }
+
+    /* ── Flow Diagram (SVG-style) ────────────────────────── */
+    .flow-container {
+      margin: 3rem 0;
+    }
+    .flow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .flow-node {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 1rem 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      text-align: center;
+      min-width: 140px;
+      transition: border-color 0.3s;
+    }
+    .flow-node:hover { border-color: var(--accent-1); }
+    .flow-node.highlight {
+      border-color: var(--accent-1);
+      box-shadow: 0 0 24px rgba(92, 224, 216, 0.08);
+    }
+    .flow-arrow {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      padding: 0 0.6rem;
+      font-size: 1.2rem;
+    }
+    .flow-arrow-down {
+      display: flex;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 1.2rem;
+      padding: 0.3rem 0;
+    }
+
+    /* ── Percentage Bar ───────────────────────────────────── */
+    .pct-bar-container { margin: 2rem 0; }
+    .pct-bar {
+      display: flex;
+      height: 40px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+    .pct-bar > div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--bg);
+      font-weight: 600;
+      transition: width 1s ease;
+    }
+    .pct-bar .pct-ab { background: var(--accent-1); }
+    .pct-bar .pct-artist { background: var(--accent-2); }
+    .pct-bar .pct-token { background: var(--accent-3); }
+    .pct-bar-legend {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 0.8rem;
+      flex-wrap: wrap;
+    }
+    .pct-bar-legend span {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .pct-bar-legend .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* ── Links / References ──────────────────────────────── */
+    .ref-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .ref-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      transition: transform 0.2s, border-color 0.3s;
+      text-decoration: none;
+    }
+    .ref-card:hover { transform: translateY(-2px); border-color: var(--accent-1); }
+    .ref-card .ref-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: rgba(92, 224, 216, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1rem;
+    }
+    .ref-card .ref-info h4 { font-size: 0.95rem; color: var(--fg); margin-bottom: 0.25rem; }
+    .ref-card .ref-info p { font-size: 0.78rem; color: var(--muted); margin-bottom: 0; }
+
+    /* ── Footer ────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 3rem 0;
+      text-align: center;
+    }
+    footer p { color: var(--muted); font-size: 0.85rem; }
+
+    /* ── Responsive ────────────────────────────────────── */
+    @media (max-width: 640px) {
+      section { padding: 4rem 0; }
+      .diagram-box { padding: 1.5rem; }
+      .flow-row { flex-direction: column; }
+      .flow-arrow { transform: rotate(90deg); padding: 0.3rem 0; }
+      .pct-bar { height: 32px; font-size: 0.65rem; }
+      .hero-artwork { margin-top: 2rem; }
+    }
+
+    /* ── Glow Effects ───────────────────────────────────── */
+    .glow-1 { text-shadow: 0 0 30px rgba(92, 224, 216, 0.3); }
+    .glow-2 { text-shadow: 0 0 30px rgba(240, 98, 146, 0.3); }
+
+    /* ── Phase indicator ─────────────────────────────────── */
+    .phase-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
+      border: 1px solid;
+    }
+    .phase-badge.mint { border-color: var(--accent-1); color: var(--accent-1); }
+    .phase-badge.life { border-color: var(--accent-3); color: var(--accent-3); }
+    .phase-badge.withdraw { border-color: var(--accent-2); color: var(--accent-2); }
+
+    /* ── Animated gradient border ─────────────────────── */
+    @keyframes gradient-rotate {
+      0% { --angle: 0deg; }
+      100% { --angle: 360deg; }
+    }
+    @property --angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+    .gradient-border {
+      position: relative;
+    }
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 14px;
+      background: conic-gradient(from var(--angle), var(--accent-1), var(--accent-2), var(--accent-3), var(--accent-4), var(--accent-5), var(--accent-1));
+      z-index: -1;
+      animation: gradient-rotate 6s linear infinite;
+    }
+    .gradient-border::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      background: var(--bg);
+      z-index: -1;
+    }
+
+    /* ── Parallax pixels ──────────────────────────────── */
+    .pixel-row {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      margin: 0.5rem 0;
+      opacity: 0.15;
+    }
+    .pixel {
+      width: 8px;
+      height: 8px;
+    }
+
+    /* ── Section numbering ─────────────────────────────── */
+    .section-num {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    /* ── Price wave animation ──────────────────────────── */
+    .price-wave-container {
+      margin: 2rem 0;
+      height: 120px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+    }
+    .price-wave-container canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Smooth section transitions ────────────────────── */
+    .section-gap { height: 2rem; }
+  </style>
+</head>
+<body>
+
+<!-- Background pixel canvas -->
+<canvas id="pixel-canvas"></canvas>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  HERO                                               -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-badge">Art Blocks &middot; Generative Art &middot; On-Chain</div>
+  <h1>Pool Party</h1>
+  <p>A networked, generative art experience where real-world ERC-20 token prices shape each artwork over time.</p>
+  <p class="muted mono small" style="margin-top:-0.5rem;">by <strong>Basement</strong> x <strong>ryley-o.eth</strong></p>
+
+  <div class="hero-artwork gradient-border">
+    <img src="https://abstudio-76-mainnet.s3.amazonaws.com/0.png" alt="Pool Party #0" loading="eager" />
+    <div class="hero-artwork-label">
+      <span>Pool Party #0</span>
+      <span><a href="https://generator.artblocks.io/1/0xaa00b2b2db36b8f8004a9aa96f0012005d92b300/0" target="_blank" rel="noopener" style="color:var(--accent-1);">View Live &rarr;</a></span>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <span>Scroll</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  OVERVIEW                                           -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<section id="overview">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-num">01 &mdash; Overview</span>
+      <h2>What is Pool Party?</h2>
+      <p>
+        Pool Party is a fully on-chain generative art project released on <a href="https://www.artblocks.io/" target="_blank" rel="noopener">Art Blocks</a>. 
+        Each mint triggers a chain of smart contract interactions that purchase a randomly-selected ERC-20 token, 
+        then tracks its price over time through 12 automated check-ins. These real-world price movements directly 
+        influence the artwork's visual output &mdash; making every piece a living, evolving composition.
+      </p>
+    </div>
+    <div class="overview-grid reveal">
+      <div class="stat-card">
+        <div class="label">Fully On-Chain</div>
+        <div class="value accent-1">100%</div>
+        <div class="desc">All script data and project configuration stored on-chain</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Supported Tokens</div>
+        <div class="value accent-2">14</div>
+        <div class="desc">Popular ERC-20 tokens randomly assigned at mint</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Price Check-ins</div>
+        <div class="value accent-3">12</div>
+        <div class="desc">Automated Chainlink updates per token lifetime</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">MEV Protected</div>
+        <div class="value accent-4">&#10003;</div>
+        <div class="desc">Chainlink oracle price feeds guard against sandwich attacks</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  HOW IT WORKS — HIGH LEVEL                          -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<section id="how-it-works">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-num">02 &mdash; How It Works</span>
+      <h2>The Life of a Pool Party Token</h2>
+      <p>Every token goes through three distinct phases, from mint to maturity.</p>
+    </div>
+
+    <div class="timeline reveal">
+      <!-- Phase 1: Mint -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-step"><span class="phase-badge mint">Phase 1</span> &nbsp; Mint</div>
+        <h3 style="color:var(--accent-1);">Collector Chooses a Price</h3>
+        <p>The collector decides how much ETH to spend. A random ERC-20 token is selected based on the token's hash. 80% of the payment is immediately swapped into that token via Uniswap V3.</p>
+      </div>
+      <!-- Phase 2: Revenue Split -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-step"><span class="phase-badge mint">Phase 1</span> &nbsp; Revenue Split</div>
+        <h3 style="color:var(--accent-2);">Funds Are Distributed</h3>
+        <p>10% goes to Art Blocks, 10% to the artists, and the remaining 80% purchases an ERC-20 token &mdash; all in a single atomic transaction.</p>
+      </div>
+      <!-- Phase 3: Life -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-step"><span class="phase-badge life">Phase 2</span> &nbsp; Living Art</div>
+        <h3 style="color:var(--accent-3);">12 Automated Check-Ins</h3>
+        <p>Chainlink Automation triggers price check-ins over the token's lifetime. Each check-in records the current price, injected as a PostParam value that directly shapes the artwork's output.</p>
+      </div>
+      <!-- Phase 4: Evolution -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-step"><span class="phase-badge life">Phase 2</span> &nbsp; Visual Evolution</div>
+        <h3 style="color:var(--accent-4);">The Art Responds to Markets</h3>
+        <p>As prices rise and fall in the real world, each artwork evolves. No two tokens will ever look the same because no two price histories are the same.</p>
+      </div>
+      <!-- Phase 5: Withdraw -->
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-step"><span class="phase-badge withdraw">Phase 3</span> &nbsp; Withdrawal</div>
+        <h3 style="color:var(--accent-5);">Claim Your Tokens</h3>
+        <p>After all 12 check-ins are complete, the token owner can toggle the <code class="mono accent-1">isWithdrawn</code> PostParam to withdraw the ERC-20 tokens purchased at mint to their wallet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  MINT FLOW DIAGRAM                                  -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<section id="mint-flow">
+  <div class="wide-container">
+    <div class="reveal">
+      <span class="section-num">03 &mdash; Mint Flow</span>
+      <h2>What Happens When You Mint</h2>
+      <p>A single transaction triggers an orchestrated sequence of smart contract interactions.</p>
+    </div>
+
+    <div class="diagram-box reveal">
+      <div class="diagram-title">Mint Transaction Flow</div>
+      <pre>
+  ┌─────────────────────┐
+  │   <span class="accent-1">Collector</span>          │     Chooses price &amp; mints
+  │   sends ETH         │     via Art Blocks
+  └─────────┬───────────┘
+            │
+            ▼
+  ┌─────────────────────┐
+  │  <span class="accent-2">Art Blocks</span>          │     Sliding Scale Minter
+  │  Minting Contract   │     accepts variable pricing
+  └─────────┬───────────┘
+            │
+            ├──────────────────────────────────── 10% ──→  Art Blocks Revenue
+            │
+            ▼
+  ┌─────────────────────┐
+  │  <span class="accent-3">StratHooks.sol</span>      │     PostParam Hook triggered
+  │  (onTokenPMPConfigure)│     on mint
+  └─────────┬───────────┘
+            │
+            ├──────────────────────────────────── 10% ──→  Artist Revenue
+            │
+            ▼
+  ┌─────────────────────┐
+  │  <span class="accent-4">GuardedEthToken</span>    │     80% of ETH used to
+  │  <span class="accent-4">Swapper.sol</span>         │     buy random ERC-20
+  └─────────┬───────────┘
+            │  Chainlink oracle validates fair price
+            │  Uniswap V3 executes atomic swap
+            ▼
+  ┌─────────────────────┐
+  │  <span class="accent-5">ERC-20 Tokens</span>      │     Held by StratHooks
+  │  held in contract   │     until withdrawal
+  └─────────────────────┘
+      </pre>
+    </div>
+
+    <!-- Percentage bar -->
+    <div class="pct-bar-container reveal">
+      <div class="diagram-title">Revenue Distribution</div>
+      <div class="pct-bar">
+        <div class="pct-ab" style="width:10%;">10%</div>
+        <div class="pct-artist" style="width:10%;">10%</div>
+        <div class="pct-token" style="width:80%;">80%</div>
+      </div>
+      <div class="pct-bar-legend">
+        <span><span class="dot" style="background:var(--accent-1);"></span> Art Blocks</span>
+        <span><span class="dot" style="background:var(--accent-2);"></span> Artists</span>
+        <span><span class="dot" style="background:var(--accent-3);"></span> ERC-20 Token Purchase</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  SUPPORTED TOKENS                                   -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<section id="tokens">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-num">04 &mdash; Token Pool</span>
+      <h2>14 Supported ERC-20 Tokens</h2>
+      <p>One of these tokens is randomly selected at mint based on the token's hash. Each uses a verified Chainlink TOKEN/ETH price feed and an optimal Uniswap V3 fee tier.</p>
+    </div>
+    <div class="token-grid reveal">
+      <div class="token-pill">WBTC</div>
+      <div class="token-pill">LINK</div>
+      <div class="token-pill">UNI</div>
+      <div class="token-pill">AAVE</div>
+      <div class="token-pill">1INCH</div>
+      <div class="token-pill">COMP</div>
+      <div class="token-pill">CRV</div>
+      <div class="token-pill">LDO</div>
+      <div class="token-pill">MKR</div>
+      <div class="token-pill">APE</div>
+      <div class="token-pill">BAT</div>
+      <div class="token-pill">ZRX</div>
+      <div class="token-pill">USDT</div>
+      <div class="token-pill">SHIB</div>
+    </div>
+    <p class="small muted reveal" style="margin-top:1rem;">
+      All tokens use 5% oracle validation tolerance. WBTC uses the ETH/BTC Chainlink feed for optimal precision.
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  PRICE CHECK-INS                                    -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<section id="checkins">
+  <div class="wide-container">
+    <div class="reveal">
+      <span class="section-num">05 &mdash; Living Artwork</span>
+      <h2>Price Check-Ins &amp; Visual Evolution</h2>
+      <p>Each token is assigned a random interval between its 12 price check-ins. Chainlink Automation nodes monitor the contract and execute check-ins automatically.</p>
+    </div>
+
+    <div class="diagram-box reveal">
+      <div class="diagram-title">Chainlink Automation &amp; PostParam Injection</div>
+      <pre>
+  Time ─────────────────────────────────────────────────────────▶
+
+  Mint                                                    12th Check-in
+   │                                                           │
+   ▼     ┌──┐  ┌──┐     ┌──┐  ┌──┐  ┌──┐  ┌──┐     ┌──┐     ▼
+   ●─────│C1│──│C2│─────│C3│──│C4│──│C5│──│C6│─────│..│─────●
+         └──┘  └──┘     └──┘  └──┘  └──┘  └──┘     └──┘
+          │     │         │     │     │     │         │
+          ▼     ▼         ▼     ▼     ▼     ▼         ▼
+        price  price    price price price price     price
+        saved  saved    saved saved saved saved     saved
+          │     │         │     │     │     │         │
+          └─────┴─────────┴─────┴─────┴─────┴─────────┘
+                              │
+                              ▼
+                  ┌───────────────────────┐
+                  │  <span class="accent-1">PostParam Values</span>     │
+                  │  injected on read     │
+                  │  via onTokenPMPRead   │
+                  │  Augmentation         │
+                  └───────────┬───────────┘
+                              │
+                              ▼
+                  ┌───────────────────────┐
+                  │  <span class="accent-2">Artwork Responds</span>     │
+                  │  Visual output        │
+                  │  evolves with each    │
+                  │  price check-in       │
+                  └───────────────────────┘
+      </pre>
+    </div>
+
+    <div class="info-cards reveal">
+      <div class="info-card">
+        <div class="info-card-icon" style="background:rgba(92,224,216,0.1);">🔗</div>
+        <h3>Chainlink Automation</h3>
+        <p>Off-chain nodes call <code class="mono">checkUpkeep()</code> to determine when a price check-in is needed. When triggered, <code class="mono">performUpkeep()</code> executes on-chain with idempotency guarantees via round tracking.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon" style="background:rgba(255,213,79,0.1);">📊</div>
+        <h3>PostParam Augmentation</h3>
+        <p>When the artwork is read (displayed), <code class="mono">onTokenPMPReadAugmentation</code> injects all recorded price check-ins as parameters. The generative script uses these to shape its visual output.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon" style="background:rgba(240,98,146,0.1);">🎨</div>
+        <h3>Unique Histories</h3>
+        <p>Because each token has a different ERC-20, a different mint time, and different check-in intervals, no two price histories &mdash; and therefore no two artworks &mdash; will ever be the same.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  ANIMATED PRICE WAVE                                -->
+<!-- ════════════════════════════════════════════════════ -->
+<section style="padding: 2rem 0;">
+  <div class="container">
+    <div class="price-wave-container reveal">
+      <canvas id="price-wave"></canvas>
+    </div>
+    <p class="small muted" style="text-align:center; margin-top:0.5rem;">Simulated price wave — illustrating how real-world price movements shape the art</p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  WITHDRAWAL                                         -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<section id="withdrawal">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-num">06 &mdash; Withdrawal</span>
+      <h2>Claiming Your Tokens</h2>
+      <p>Once all 12 price check-ins are complete, the artistic journey concludes and the collector can reclaim the underlying ERC-20 tokens.</p>
+    </div>
+
+    <div class="diagram-box reveal">
+      <div class="diagram-title">Withdrawal Flow</div>
+      <pre>
+  ┌─────────────────────┐    All 12 check-ins    ┌─────────────────────┐
+  │  <span class="accent-1">StratHooks</span>         │      complete         │  <span class="accent-3">Token Owner</span>        │
+  │  Contract           │ ◀────────────────────── │  (Collector)        │
+  │  holds ERC-20s      │                         │                     │
+  └─────────┬───────────┘                         └──────────┬──────────┘
+            │                                                │
+            │   Owner sets isWithdrawn = true                 │
+            │   via PostParam configure                       │
+            │◀───────────────────────────────────────────────┘
+            │
+            ▼
+  ┌─────────────────────┐
+  │  ERC-20 tokens      │
+  │  transferred to     │──────────▶  Collector's Wallet 🎉
+  │  token owner        │
+  └─────────────────────┘
+      </pre>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  TECHNICAL DEEP DIVE                                -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<section id="technical">
+  <div class="wide-container">
+    <div class="reveal">
+      <span class="section-num">07 &mdash; Technical Deep Dive</span>
+      <h2>Architecture &amp; Smart Contracts</h2>
+      <p>Pool Party's on-chain architecture orchestrates multiple smart contracts, oracles, and DEX protocols into a single cohesive system.</p>
+    </div>
+
+    <div class="diagram-box reveal">
+      <div class="diagram-title">System Architecture</div>
+      <pre>
+  ┌────────────────────────────────────────────────────────────────────┐
+  │                     <span class="accent-1">ART BLOCKS ECOSYSTEM</span>                         │
+  │                                                                    │
+  │  ┌──────────────┐     ┌──────────────────┐     ┌──────────────┐   │
+  │  │ Art Blocks    │     │ Sliding Scale    │     │ Studio       │   │
+  │  │ Core Contract │────▶│ Minter           │────▶│ Contract     │   │
+  │  │              │     │ (variable price) │     │ (on-chain    │   │
+  │  │              │     │                  │     │  scripts)    │   │
+  │  └──────────────┘     └──────────────────┘     └──────┬───────┘   │
+  │                                                       │           │
+  │                                          PostParam Hook│           │
+  └───────────────────────────────────────────────────────┼───────────┘
+                                                          │
+                          ┌───────────────────────────────▼───────────┐
+                          │          <span class="accent-2">StratHooks.sol</span>                   │
+                          │  ┌─────────────────────────────────────┐  │
+                          │  │ • onTokenPMPConfigure (mint logic)  │  │
+                          │  │ • onTokenPMPReadAugmentation        │  │
+                          │  │ • checkUpkeep / performUpkeep       │  │
+                          │  │ • Token metadata &amp; price history    │  │
+                          │  │ • Withdrawal logic                  │  │
+                          │  └─────────────────────────────────────┘  │
+                          │                     │                     │
+                          └─────────────────────┼─────────────────────┘
+                                                │
+                    ┌───────────────────────┬────┴─────────────────────┐
+                    │                       │                          │
+                    ▼                       ▼                          ▼
+  ┌─────────────────────┐   ┌────────────────────┐   ┌────────────────────┐
+  │ <span class="accent-3">GuardedEthToken</span>    │   │ <span class="accent-4">Chainlink</span>           │   │ <span class="accent-5">Chainlink</span>           │
+  │ <span class="accent-3">Swapper.sol</span>         │   │ <span class="accent-4">Oracles</span>             │   │ <span class="accent-5">Automation</span>          │
+  │                     │   │                    │   │                    │
+  │ • ETH → ERC20 swap │   │ • TOKEN/ETH feeds  │   │ • checkUpkeep      │
+  │ • MEV protection   │   │ • Price validation │   │ • performUpkeep    │
+  │ • Uniswap V3       │   │ • 24hr staleness   │   │ • Round tracking   │
+  └─────────────────────┘   └────────────────────┘   └────────────────────┘
+      </pre>
+    </div>
+
+    <div class="info-cards reveal">
+      <div class="info-card">
+        <div class="info-card-icon" style="background:rgba(92,224,216,0.1);">⛓️</div>
+        <h3>Fully On-Chain</h3>
+        <p>Pool Party is configured on the Basement Art Blocks Studio contract. All script information &mdash; the generative code that produces each artwork &mdash; is stored fully on-chain, ensuring permanence and decentralization.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon" style="background:rgba(124,77,255,0.1);">🛡️</div>
+        <h3>MEV Protection</h3>
+        <p>The GuardedEthTokenSwapper uses Chainlink oracle price feeds to validate that Uniswap swaps execute at fair market prices. This eliminates sandwich attacks without requiring special function input arguments &mdash; keeping it compatible with standard Art Blocks minting.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon" style="background:rgba(255,112,67,0.1);">🤖</div>
+        <h3>Idempotent Automation</h3>
+        <p>Chainlink Automation uses a round-based system with per-token tracking. Each upkeep encodes <code class="mono">(tokenId, round)</code> for guaranteed idempotency, preventing duplicate or stale executions.</p>
+      </div>
+    </div>
+
+    <div class="diagram-box reveal">
+      <div class="diagram-title">PostParam Data Flow</div>
+      <pre>
+  ┌──────────────────┐                        ┌──────────────────┐
+  │  <span class="accent-1">Configure</span>       │                        │  <span class="accent-2">Read</span>             │
+  │  (Write Path)    │                        │  (Display Path)  │
+  └────────┬─────────┘                        └────────┬─────────┘
+           │                                           │
+           ▼                                           ▼
+  onTokenPMPConfigure                     onTokenPMPReadAugmentation
+           │                                           │
+           │  ┌────────────────────────┐               │
+           │  │  On-Chain State        │               │
+           ├─▶│  • tokenMetadata       │──────────────▶│
+           │  │  • priceHistory[12]    │               │
+           │  │  • isWithdrawn         │               │
+           │  │  • assignedToken       │               │
+           │  └────────────────────────┘               │
+           │                                           │
+           ▼                                           ▼
+  Validates &amp; stores                       Injects prices as
+  user actions                             PostParam array
+  (mint, withdraw)                         for the artwork
+      </pre>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  CONTRACTS & REFERENCES                             -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<section id="references">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-num">08 &mdash; References</span>
+      <h2>Contracts &amp; Links</h2>
+      <p>Explore the open-source code and deployed contracts powering Pool Party.</p>
+    </div>
+
+    <div class="ref-grid reveal">
+      <a class="ref-card" href="https://github.com/ryley-o/StratHooks" target="_blank" rel="noopener">
+        <div class="ref-icon">📜</div>
+        <div class="ref-info">
+          <h4>StratHooks</h4>
+          <p>PostParam hook contract — mint logic, price check-ins, Chainlink Automation, withdrawal. UUPS upgradeable.</p>
+        </div>
+      </a>
+      <a class="ref-card" href="https://github.com/ryley-o/GuardedEthTokenSwapper" target="_blank" rel="noopener">
+        <div class="ref-icon">🔄</div>
+        <div class="ref-info">
+          <h4>GuardedEthTokenSwapper</h4>
+          <p>MEV-protected ETH→ERC20 swapper using Chainlink oracles and Uniswap V3. 14 supported tokens.</p>
+        </div>
+      </a>
+      <a class="ref-card" href="https://github.com/ArtBlocks/artblocks-contracts" target="_blank" rel="noopener">
+        <div class="ref-icon">🎨</div>
+        <div class="ref-info">
+          <h4>Art Blocks Contracts</h4>
+          <p>Smart contracts that power Art Blocks — includes the Studio contract and PostMintParameter (PMP) system.</p>
+        </div>
+      </a>
+      <a class="ref-card" href="https://etherscan.io/address/0x9a3f4307b1d12aea5e2633e6e10fb3cf9ac81f9a" target="_blank" rel="noopener">
+        <div class="ref-icon">🔍</div>
+        <div class="ref-info">
+          <h4>StratHooks Proxy (Mainnet)</h4>
+          <p>0x9a3f4307b1d12aeA5E2633e6e10Fb3cf9Ac81F9a — UUPS proxy on Ethereum mainnet.</p>
+        </div>
+      </a>
+      <a class="ref-card" href="https://etherscan.io/address/0x7FFc0E3F2aC6ba73ada2063D3Ad8c5aF554ED05f" target="_blank" rel="noopener">
+        <div class="ref-icon">🔍</div>
+        <div class="ref-info">
+          <h4>GuardedEthTokenSwapper (Mainnet)</h4>
+          <p>0x7FFc0E3F2aC6ba73ada2063D3Ad8c5aF554ED05f — deployed and verified on Ethereum mainnet.</p>
+        </div>
+      </a>
+      <a class="ref-card" href="https://etherscan.io/address/0xaa00b2b2db36b8f8004a9aa96f0012005d92b300" target="_blank" rel="noopener">
+        <div class="ref-icon">🔍</div>
+        <div class="ref-info">
+          <h4>Pool Party Studio Contract</h4>
+          <p>0xaa00b2b2db36b8f8004a9aa96f0012005d92b300 — Basement Art Blocks Studio contract.</p>
+        </div>
+      </a>
+      <a class="ref-card" href="https://www.artblocks.io/" target="_blank" rel="noopener">
+        <div class="ref-icon">🏛️</div>
+        <div class="ref-info">
+          <h4>Art Blocks</h4>
+          <p>The premier platform for generative art on Ethereum. Purchase Pool Party tokens here.</p>
+        </div>
+      </a>
+      <a class="ref-card" href="https://generator.artblocks.io/1/0xaa00b2b2db36b8f8004a9aa96f0012005d92b300/0" target="_blank" rel="noopener">
+        <div class="ref-icon">👁️</div>
+        <div class="ref-info">
+          <h4>Live View — Pool Party #0</h4>
+          <p>View the live generative output of token #0 in the Art Blocks generator.</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  FOOTER                                             -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="divider"></div>
+<footer>
+  <div class="container">
+    <p class="mono" style="margin-bottom: 0.5rem;">Pool Party &mdash; <span class="accent-1">Basement</span> x <span class="accent-2">ryley-o.eth</span></p>
+    <p style="margin-bottom: 0;">A networked generative art experience on Art Blocks.</p>
+  </div>
+</footer>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  SCRIPTS                                            -->
+<!-- ════════════════════════════════════════════════════ -->
+<script>
+// ── Scroll reveal ─────────────────────────────────────────
+const reveals = document.querySelectorAll('.reveal');
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+reveals.forEach(el => revealObserver.observe(el));
+
+// ── Pixel canvas background ───────────────────────────────
+(function() {
+  const canvas = document.getElementById('pixel-canvas');
+  const ctx = canvas.getContext('2d');
+  const PIXEL = 6;
+  let cols, rows;
+  const colors = [
+    [92, 224, 216],
+    [240, 98, 146],
+    [255, 213, 79],
+    [124, 77, 255],
+    [255, 112, 67],
+    [100, 181, 246],
+    [129, 199, 132],
+  ];
+  let pixels = [];
+  let time = 0;
+
+  function resize() {
+    canvas.width = Math.ceil(window.innerWidth / PIXEL);
+    canvas.height = Math.ceil(window.innerHeight / PIXEL);
+    cols = canvas.width;
+    rows = canvas.height;
+    pixels = [];
+    for (let i = 0; i < 60; i++) {
+      pixels.push({
+        x: Math.floor(Math.random() * cols),
+        y: Math.floor(Math.random() * rows),
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: Math.random() * 200,
+        speed: 0.3 + Math.random() * 0.7
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, cols, rows);
+    time += 0.016;
+    for (const p of pixels) {
+      p.life += p.speed;
+      const alpha = Math.sin(p.life * 0.03) * 0.5 + 0.5;
+      if (alpha > 0.05) {
+        ctx.fillStyle = `rgba(${p.color[0]},${p.color[1]},${p.color[2]},${alpha * 0.6})`;
+        ctx.fillRect(p.x, p.y, 1, 1);
+        // subtle glow
+        ctx.fillStyle = `rgba(${p.color[0]},${p.color[1]},${p.color[2]},${alpha * 0.15})`;
+        ctx.fillRect(p.x - 1, p.y, 3, 1);
+        ctx.fillRect(p.x, p.y - 1, 1, 3);
+      }
+      if (p.life > 400) {
+        p.x = Math.floor(Math.random() * cols);
+        p.y = Math.floor(Math.random() * rows);
+        p.life = 0;
+        p.color = colors[Math.floor(Math.random() * colors.length)];
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+
+// ── Price wave canvas ─────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('price-wave');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w, h;
+  let time = 0;
+
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * 2;
+    canvas.height = rect.height * 2;
+    w = canvas.width;
+    h = canvas.height;
+    ctx.scale(1, 1);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    time += 0.008;
+
+    const lines = [
+      { color: 'rgba(92, 224, 216, 0.6)', offset: 0, amp: 0.3, freq: 1.2 },
+      { color: 'rgba(240, 98, 146, 0.5)', offset: 1.5, amp: 0.25, freq: 0.9 },
+      { color: 'rgba(255, 213, 79, 0.4)', offset: 3, amp: 0.2, freq: 1.5 },
+      { color: 'rgba(124, 77, 255, 0.35)', offset: 4.5, amp: 0.35, freq: 0.7 },
+    ];
+
+    for (const line of lines) {
+      ctx.beginPath();
+      ctx.strokeStyle = line.color;
+      ctx.lineWidth = 2;
+      for (let x = 0; x <= w; x += 2) {
+        const t = x / w;
+        const y = h * 0.5
+          + Math.sin((t * Math.PI * 2 * line.freq) + time * 2 + line.offset) * h * line.amp
+          + Math.sin((t * Math.PI * 4 * line.freq) + time * 1.3 + line.offset) * h * line.amp * 0.3;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Check-in dots
+    const dotCount = 12;
+    for (let i = 0; i < dotCount; i++) {
+      const t = (i + 1) / (dotCount + 1);
+      const x = t * w;
+      const y = h * 0.5
+        + Math.sin((t * Math.PI * 2 * 1.2) + time * 2) * h * 0.3
+        + Math.sin((t * Math.PI * 4 * 1.2) + time * 1.3) * h * 0.3 * 0.3;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(92, 224, 216, 0.8)';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(92, 224, 216, 0.15)';
+      ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+
+// ── Parallax on scroll for hero artwork ────────────────────
+window.addEventListener('scroll', () => {
+  const scrollY = window.scrollY;
+  const hero = document.querySelector('.hero-artwork');
+  if (hero) {
+    hero.style.transform = `translateY(${scrollY * 0.08}px)`;
+  }
+});
+</script>
+</body>
+</html>
