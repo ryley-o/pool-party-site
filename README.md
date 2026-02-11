@@ -4,7 +4,9 @@
 
 Each mint purchases a randomly-selected ERC-20 token, then tracks its price over time through 12 automated Chainlink check-ins. These real-world price movements directly influence the artwork's visual output — making every piece a living, evolving composition.
 
-> **Live site:** [https://ryley-o.github.io/pool-party-site](https://ryley-o.github.io/pool-party-site)
+> **Live site:** [https://pool-party.fun](https://pool-party.fun)
+>
+> The GitHub Pages deployment at `ryley-o.github.io/pool-party-site` redirects to the above. The original informational page source is kept in this repo for reference.
 
 ## How It Works
 
